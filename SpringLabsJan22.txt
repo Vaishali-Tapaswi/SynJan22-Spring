@@ -1,0 +1,867 @@
+Day 4 
+Lab 4 - Spring Initializer
+		Day4.demo4 - dependencies - Data JPA, hsqldb
+		Eclipse -> import
+		Create Entities.Dept.java 
+			@Entity
+			@Table(name = "depttable")
+			public class Dept {
+				@Id
+				@Column(name = "deptnocol")
+				private int deptno;
+				@Column(name = "dnamecol")
+				private String dname;
+				@Column(name = "loccol")
+				private String loc;
+				+ get/set + toString
+				+ constructors(default+parameterised)
+		Create interface demo.DeptDAO.java
+			package demo;
+
+			import org.springframework.data.jpa.repository.JpaRepository;
+
+			import entities.Dept;
+
+			public interface DeptDAO extends JpaRepository<Dept, Integer> {
+
+			}
+		Modify Applicatio file to test
+			@SpringBootApplication
+			@EnableJpaRepositories
+			@EntityScan(value = "entities")
+			public class JPAApplication {
+
+				public static void main(String[] args) {
+					ApplicationContext context = SpringApplication.run(JPAApplication.class, args);
+					DeptDAO dao = context.getBean("deptDAO",DeptDAO.class);
+
+					for (int i = 10;i<100;i+=10) {
+						Dept d = new Dept(i, "DNameof"+i, "Hyd");
+						if( (i%20)==0)
+								d.setLoc("Pnq");
+						dao.save(d);
+					}
+					Dept d1 = new Dept (20,"..","..");
+					dao.delete(d1);
+					Dept d = new Dept (10,"HR","BLR");
+					dao.save(d);
+					dao.findAll().forEach(System.out::println);
+				}
+			}
+		Test 
+		Modify application.properties
+			spring.jpa.show-sql=true
+
+			
+Lab 3 - Spring Initializer
+			Day4.demo3 - dependencies - web, security(spring)
+			Eclipse	
+				Write MyController to have main and 3 methods
+				main - just show three hlinks
+				simple
+				admin/m1
+				admin/m2
+		Write demo.MySecurityConfig.java
+			package demo;
+			@Configuration
+			public class MySecurityConfig  extends WebSecurityConfigurerAdapter {
+				@Bean
+				@Override
+				public UserDetailsService userDetailsService() {
+					UserDetails user =
+						 User.withDefaultPasswordEncoder()
+							.username("user1")
+							.password("pass1")
+							.roles("admin")
+							.build();
+
+					return new InMemoryUserDetailsManager(user);
+				}
+				@Override
+				protected void configure(HttpSecurity http) throws Exception {
+					http
+						.authorizeRequests()
+							.antMatchers("/", "/simple").permitAll()
+							.anyRequest().authenticated()
+							.and()
+							.httpBasic()
+							.and()
+						.logout()
+							.permitAll();
+				}
+			}		
+Lab 2 - Spring Initializer 
+			Day4.demo2 -> dependencies - web
+			Generate 
+		Eclipse (import / create)
+			Copy FirstController from Day3.demo1
+		Run	
+			http://localhost:8080/first
+		Maven build -> package
+			check the jar file generated
+			java -jar filename
+			
+
+Lab1 - Chrome -> Spring Initializer
+		Day4.demo1 ->no dependencies
+		Generate -> download and import or just take pom file and application file 
+		Observe -> effective pom file
+		Write First.java in same package as of application
+			package demo;
+
+			import org.springframework.context.annotation.Scope;
+			import org.springframework.stereotype.Component;
+
+			@Component
+			@Scope(value = "prototype")
+			public class First {
+				public First() {
+					System.out.println("First Constructor invoked ");
+				}
+				public void m1() {
+					System.out.println("m1 of First invoked ...");
+				}
+			}
+		Modify main method 
+				ApplicationContext ctx = SpringApplication.run(Application.class, args);
+				
+				First f1 = ctx.getBean("first",First.class);
+				f1.m1();
+				
+				First f2 = ctx.getBean("first",First.class);
+				f2.m1();
+				
+				First f3 = ctx.getBean("first",First.class);
+				f3.m1();
+				
+		Test it
+--------------------------------------------------------------------------------------------------
+Day 3
+Lab 6 - Write Dept
+				package custom;
+
+				public class Dept {
+					private int deptno;
+					private String dname;
+					private String loc;
+
+		Write DeptController
+			package custom;
+
+			@RestController
+			@RequestMapping(value = "/dept")
+			public class DeptController {
+				private List<Dept> list = new ArrayList<Dept>();
+				
+				@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+				public String add(@RequestBody Dept d) {
+					System.out.println("Adding " + d);
+					list.add(d);
+					return "<h1>Added</h1>";
+				}
+				@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+				public List<Dept> list(){
+					System.out.println("List " + list.size());
+					return list;
+				}
+			}
+
+		Modify pom file to include
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.12.5</version>
+		</dependency>
+
+		Modify aa-servlet.xml 
+			<?xml version="1.0" encoding="UTF-8"?>
+			<beans xmlns="http://www.springframework.org/schema/beans"
+				xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+				xmlns:context="http://www.springframework.org/schema/context"
+				 xmlns:mvc="http://www.springframework.org/schema/mvc"
+				xsi:schemaLocation="http://www.springframework.org/schema/beans
+					https://www.springframework.org/schema/beans/spring-beans.xsd
+					http://www.springframework.org/schema/context
+					https://www.springframework.org/schema/context/spring-context.xsd
+					http://www.springframework.org/schema/mvc
+					http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+					<bean name="/my" class="demo.MyController"/>
+				<!--     <bean name="/first" class="demo.FirstController"/>  -->
+					<context:component-scan base-package="demo, params, custom"></context:component-scan>
+					<mvc:annotation-driven></mvc:annotation-driven>
+			 </beans>
+------
+Lab 5 - Write Code params.RequestParamDemo
+		package params;
+
+		@RestController
+		@RequestMapping(value = "/rp")
+		public class RequestParamDemo {
+
+			@GetMapping(value = "/hello")
+			public String hello(@RequestParam(name = "nm")String name) {
+				System.out.println("RequestParam - Hello invoked with " + name);
+				return "<h1>Hello, "+name+"</h1>";
+			}
+			@GetMapping(value = "/add")
+			public String add( @RequestParam(name = "num1") int i ,
+					@RequestParam(name = "num2") int j) {
+				System.out.println("RequestParam add invoked with " + i +", " + j);
+				return "<h1>Sum = " + (i+j)+ "</h1>";
+			}
+		}
+
+Lab 4 - Write code params.PathParamDemo.java
+		package params;
+
+		@RestController
+		@RequestMapping(value = "/pp")
+		public class PathParamDemo {
+
+			@GetMapping(value = "/hello/{nm}")
+			public String hello(@PathVariable(name = "nm")String name) {
+				System.out.println("PathParamDemo - Hello invoked with " + name);
+				return "<h1>Hello, "+name+"</h1>";
+			}
+			
+			public String add(int i , int j) {
+				return null;
+			}
+		}
+		Run - 404 -> aa-servlet.xml, add params 
+		Run - http://localhost:8080/Day3.demo1/chk/pp/hello/VVV
+			  http://localhost:8080/Day3.demo1/chk/pp/add/10/30
+			
+Lab 3 - Write SecondController
+			package demo;
+
+			//@Controller
+			@RestController
+			@RequestMapping(value="/second")
+			public class SecondController{
+				@GetMapping(value="/s1")
+			//	@ResponseBody
+			//	@RequestMapping(value="/s1")
+				public String method1() {
+					String str = "Second Method1 - GET";
+					System.out.println(str);
+					return "<h1>"+str+"</h1>";
+				}
+
+				@GetMapping(value="/s2")
+			//	@ResponseBody
+			//	@RequestMapping(value="/s2")
+				public String method2() {
+					String str = "Second Method2 - GET";
+					System.out.println(str);
+					return "<h1>"+str+"</h1>";
+				}
+			}
+
+		Write ThirdController
+		
+			package demo;
+
+			@RestController
+			@RequestMapping(value="/third")
+			public class ThirdController{
+				@GetMapping(produces = MediaType.TEXT_PLAIN_VALUE)
+				public String method1() {
+					String str = "Third Method1 - GET - plain text";
+					System.out.println(str);
+					return "plain text";
+				}
+
+				@GetMapping(produces = MediaType.TEXT_HTML_VALUE)
+				public String method2() {
+					String str = "Third Method2 - GET - html";
+					System.out.println(str);
+					return "<h1>HTML Output</h1>";
+				}
+
+				@GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+				public String method3() {
+					String str = "Third Method3 - GET - json";
+					System.out.println(str);
+					return "{\"empno\":10 , \"ename\":\"Vaishali\"}";
+				}
+				@GetMapping(produces = MediaType.APPLICATION_XML_VALUE)
+				public String method4() {
+					String str = "Third Method4 - GET - XML";
+					System.out.println(str);
+					return "\r\n"
+							+ "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n"
+							+ "<note>\r\n"
+							+ "  <to>Tove</to>\r\n"
+							+ "  <from>Jani</from>\r\n"
+							+ "  <heading>Reminder</heading>\r\n"
+							+ "  <body>Don't forget me this weekend!</body>\r\n"
+							+ "</note>";
+				}
+			}
+		Browser ->
+		Postman -> header -> Accept
+			
+Lab2 - 
+	Write demo.FirstController
+		package demo;
+		@Controller
+		@RequestMapping(value="/first")
+		public class FirstController{
+			@GetMapping()
+			@ResponseBody
+			public String method1() {
+				String str = "Method1 - GET";
+				System.out.println(str);
+				return "<h1>"+str+"</h1>";
+			}
+	Modify aa-servlet.xml to include
+		 <context:component-scan base-package="demo"></context:component-scan>
+	
+	run -> http://localhost:8080/Day3.demo1/chk/first
+	Write 3 more methods -> PostMapping, PutMapping, DeleteMapping 
+	Postman -> get/post/put/delete
+		 
+Lab1 - Maven project (Day3.demo1)
+			packaging -> war 
+		modify pom file to include 
+			<!-- https://mvnrepository.com/artifact/org.springframework/spring-webmvc -->
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-webmvc</artifactId>
+				<version>5.3.14</version>
+			</dependency>
+
+		Create web.xml in webapp\WEB-INF
+			<?xml version="1.0" encoding="UTF-8"?>
+			<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://xmlns.jcp.org/xml/ns/javaee" xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_4_0.xsd" id="WebApp_ID" version="4.0">
+			<servlet>
+				<servlet-name>aa</servlet-name>
+				<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+				<load-on-startup>1</load-on-startup>
+			</servlet>
+			<servlet-mapping>
+				<servlet-name>aa</servlet-name>
+				<url-pattern>/chk/*</url-pattern>
+			</servlet-mapping>
+			</web-app>
+		create {servlet-name}-servlet.xml (aa-servlet.xml)
+			<?xml version="1.0" encoding="UTF-8"?>
+			<beans xmlns="http://www.springframework.org/schema/beans"
+				xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+				xmlns:context="http://www.springframework.org/schema/context"
+				xsi:schemaLocation="http://www.springframework.org/schema/beans
+					https://www.springframework.org/schema/beans/spring-beans.xsd
+					http://www.springframework.org/schema/context
+					https://www.springframework.org/schema/context/spring-context.xsd">
+					<bean name="/my" class="demo.MyController"/>
+			 </beans>
+		create demo.MyController.java
+			package demo;
+
+			public class MyController implements Controller{
+
+				public ModelAndView handleRequest(HttpServletRequest arg0, HttpServletResponse arg1) throws Exception {
+					// TODO Auto-generated method stub
+					System.out.println("In MyController handleRequest");
+					return new ModelAndView("/t1.jsp");
+				}
+
+			}
+		create t1.jsp (in webapp folder)
+			<%@page import="java.util.Date"%>
+			<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+				pageEncoding="ISO-8859-1"%>
+			<!DOCTYPE html>
+			<html>
+			<head>
+			<meta charset="ISO-8859-1">
+			<title>Insert title here</title>
+			</head>
+			<body>
+			<h1>T1.jsp</h1>
+			<h1><%= new Date() %></h1>
+			</body>
+			</html>
+		run on server -> http://localhost:8080/Day3.demo1/chk/my
+--------------------------------------------------------------------------------------------------
+Day 2 = 
+Lab 4 - set up tomcat server with eclipse
+		Create new dynamic web application
+			Test1 -> generate web.xml
+			
+			create index.html  + t1.jsp 
+			run on server to test
+
+Lab 3- Day2.demo2 (Copy of Day1.demo5)
+		Dept,DeptDAO, Emp, EmpDAO
+							--> Modify insert operation to accept two emps and insert both
+							insert(Emp e1, Emp e2)-> t.persist(e1), t.persist(e2)
+		main -> to invoke emp insert 
+
+
+
+Lab 2 - Day2.demo1	
+		Write new Advice implementing AfterReturningAdvice
+		Register and see the invocation
+		
+		Write Calc Class to give add and divide methods		
+				int add(int, int)
+				int divide(String, String)
+		Write advice to implement Before, After, throws
+			register and invoke
+		RUn 
+			add(10,10)
+			divide("20","10")
+			divide("aaa" ,"11")
+			divide ("10","0")
+
+Lab 1 - Create new project (Day2.demo1)
+	Annotation Driven
+	DeptDAO, EmpDAO -> with CRUD operations
+	App1 - main	
+		Create context and invoke crud operations
+	Write MyAdvice
+		package demo;
+
+		import java.lang.reflect.Method;
+
+		import org.springframework.aop.MethodBeforeAdvice;
+
+		public class MyAdvice implements MethodBeforeAdvice {
+
+			public void before(Method method, Object[] args, Object target) throws Throwable {
+				System.out.println("------------------MyAdvice - before - " + method.getName() );
+			}
+
+		}
+	Write App1.java
+			package demo;
+
+			@Configuration
+			@ComponentScan(basePackages = "demo")
+			public class App1 {
+				@Bean
+				public DeptDAO deptDAO(){
+					// return proxy object
+					System.out.println("App1 - Bean - deptDAO");
+					ProxyFactory factory = new ProxyFactory(new DeptDAO());
+					factory.addAdvice(new MyAdvice());
+					return (DeptDAO) factory.getProxy();
+				}
+				
+			public static void main(String[] args) {
+				ApplicationContext ctx = new AnnotationConfigApplicationContext(App1.class);
+				DeptDAO deptdao = ctx.getBean("deptDAO",DeptDAO.class);
+				deptdao.create();
+				
+				deptdao.read();
+			}
+			}
+		Run - and check methods invocation 
+--------------------------------------------------------------------------------------------------
+Day 1 = 
+	Complete CRUD operations
+Lab 7 - Hibernate (Day1.demo5)
+		Modify pom file 
+				<!-- https://mvnrepository.com/artifact/org.springframework/spring-context -->
+				<dependency>
+					<groupId>org.springframework</groupId>
+					<artifactId>spring-context</artifactId>
+					<version>5.3.14</version>
+				</dependency>
+
+				<!-- https://mvnrepository.com/artifact/org.springframework/spring-orm -->
+				<dependency>
+					<groupId>org.springframework</groupId>
+					<artifactId>spring-orm</artifactId>
+					<version>5.3.14</version>
+				</dependency>
+
+				<!-- https://mvnrepository.com/artifact/org.hibernate/hibernate-entitymanager -->
+				<dependency>
+					<groupId>org.hibernate</groupId>
+					<artifactId>hibernate-entitymanager</artifactId>
+					<version>5.6.3.Final</version>
+				</dependency>
+
+
+				<!-- https://mvnrepository.com/artifact/org.hsqldb/hsqldb -->
+				<dependency>
+					<groupId>org.hsqldb</groupId>
+					<artifactId>hsqldb</artifactId>
+					<version>2.4.1</version>
+				</dependency>
+
+		Create demo.Dept
+			@Entity
+			@Table(name = "depttable")
+			public class Dept {
+				@Id
+				@Column(name = "deptnocol")
+				private int deptno;
+				@Column(name = "dnamecol")
+				private String dname;
+				@Column(name = "loccol")
+				private String loc;
+					
+			+ get/set + toString  + constructors
+		Create demo.DeptDAO
+			package demo;
+
+
+			@Component
+			@Transactional
+			public class DeptDAO {
+					@Autowired
+					private SessionFactory sessionFactory;
+				
+					public void insert(Dept d) {
+						System.out.println(sessionFactory);
+						HibernateTemplate template = new HibernateTemplate(sessionFactory);
+						template.persist(d);
+					}
+			}
+		Create App5.java
+			package demo;
+
+			@ComponentScan(basePackages = "demo")
+			@EnableTransactionManagement
+			@Configuration
+			public class App5 {
+				public DataSource ds() {
+					DriverManagerDataSource ds = new DriverManagerDataSource();
+					ds.setDriverClassName("org.hsqldb.jdbcDriver");
+					ds.setUrl("jdbc:hsqldb:hsql://localhost/");
+					ds.setUsername("SA");
+					ds.setPassword("");
+					return ds;
+				}
+
+				@Bean
+				public LocalSessionFactoryBean sessionFactory() {
+					LocalSessionFactoryBean bean = new LocalSessionFactoryBean();
+					bean.setDataSource(ds());
+					bean.setHibernateProperties(hibernateProperties());
+					bean.setPackagesToScan("demo");
+					return bean;
+
+				}
+
+				@Bean
+				public PlatformTransactionManager hibernateTransactionManager() {
+					HibernateTransactionManager transactionManager = new HibernateTransactionManager();
+					transactionManager.setSessionFactory(sessionFactory().getObject());
+					return transactionManager;
+				}
+
+				private final Properties hibernateProperties() {
+					Properties hibernateProperties = new Properties();
+					hibernateProperties.setProperty("hibernate.hbm2ddl.auto", "create");
+					hibernateProperties.setProperty("hibernate.show_sql", "true");
+					hibernateProperties.setProperty("hibernate.dialect", "org.hibernate.dialect.HSQLDialect");
+
+					return hibernateProperties;
+				}
+
+				public static void main(String[] args) {
+					// TODO Auto-generated method stub
+					ApplicationContext ctx = new AnnotationConfigApplicationContext(App5.class);
+					System.out.println("-------------Context Loaded-------------------");
+					Dept d = new Dept(10, "HR", "Hyd");
+					DeptDAO dao = ctx.getBean(DeptDAO.class);
+					dao.insert(d);
+
+				}
+			}
+		Test -> 
+		
+Lab 6 - JDBC (Day1.demo4)
+	Modify pom file to include	
+			<!-- https://mvnrepository.com/artifact/org.springframework/spring-context -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>5.3.14</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.springframework/spring-jdbc -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>5.3.14</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.springframework/spring-tx -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-tx</artifactId>
+			<version>5.3.14</version>
+		</dependency>
+
+
+		<!-- https://mvnrepository.com/artifact/org.hsqldb/hsqldb -->
+		<dependency>
+			<groupId>org.hsqldb</groupId>
+			<artifactId>hsqldb</artifactId>
+			<version>2.4.1</version>
+		</dependency>
+
+	Db Connection	 (hsqldb)
+			start the database, run client/manager
+	Dao.java
+		package demo;
+		@Component
+		//create table dept (deptno numeric primary key, dname varchar(20),loc varchar(20))
+		public class DeptDao {
+			@Autowired
+			private DataSource ds;
+			
+			public void insert (int deptno, String dname, String loc) {
+				String sql ="insert into dept values (" + deptno +",'" + dname + "','"+ loc+ "')";
+				System.out.println(sql);
+				JdbcTemplate jdbctemplate= new JdbcTemplate(ds);
+				jdbctemplate.execute(sql);
+			}
+		}
+
+	App4.java
+		package demo;
+
+
+		@Configuration
+		@ComponentScan(basePackages = "demo")
+		public class App4 {
+			@Bean
+			public DataSource ds () {
+				DriverManagerDataSource ds = new DriverManagerDataSource();
+				ds.setDriverClassName("org.hsqldb.jdbcDriver");
+				ds.setUrl("jdbc:hsqldb:hsql://localhost/");
+				ds.setUsername("SA");
+				ds.setPassword("");
+				return ds;
+			}
+		public static void main(String[] args) {
+			ApplicationContext context = new AnnotationConfigApplicationContext(App4.class);
+			DeptDao dao = context.getBean(DeptDao.class);
+			dao.insert(10, "HR","Pnq");
+		}
+		}
+	Run -> Test -> 
+---------
+Lab5-Modify	
+	1. Modify main method to delete 
+			Connection con = ctx.getBean(OracleConnection.class);
+			dao.setCon(con);
+		Run -> see error
+	2. Modify Dao.java to add annoation to con
+			@Autowired
+			private Connection con;
+		run -> successful
+	3. Modify OracleConnection to comment -> @component
+		run -> check error
+	4. Add one more class SqlConnection like OracleConnection	
+		run -> check error
+	5. Add one more annoation to con 
+			@Autowired
+			@Qualifier(value = "sqlConnection")
+			private Connection con;
+		Run 
+Lab5 - Day1.demo3 
+	Create interface Connection
+			package demo;
+
+			public interface Connection {
+				void open();
+				void close();
+			}
+	Write one implementation class -> OracleConnection
+		package demo;
+
+		import org.springframework.stereotype.Component;
+
+		@Component
+		public class OracleConnection implements Connection{
+			public OracleConnection() {
+				System.out.println("OracleConnction Constructor invoked");
+			}
+			public void open() {
+				System.out.println("OracleConnection - Open method invoked ");
+			}
+
+			public void close() {
+				System.out.println("OracleConnection - Close method invoked ");
+			}
+
+		}
+
+	Write class Dao
+		package demo;
+
+		import org.springframework.stereotype.Component;
+
+		@Component
+		public class Dao {
+			public Dao() {
+				System.out.println("DAO Constructor ");
+			}
+			private Connection con;
+			public void insert(){
+					getCon().open();
+					System.out.println("inserted ");
+					getCon().close();
+			}
+			public Connection getCon() {
+				return con;
+			}
+			public void setCon(Connection con) {
+				this.con = con;
+			}
+		}
+	
+	Write App3.java
+		main method to get instance of Dao and invoke insert method
+		package demo;
+
+		import org.springframework.context.ApplicationContext;
+		import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+		import org.springframework.context.annotation.ComponentScan;
+
+		@ComponentScan(basePackages ="demo")
+		public class App3 {
+
+			public static void main(String[] args) {
+				// TODO Auto-generated method stub
+				ApplicationContext ctx = new AnnotationConfigApplicationContext(App3.class);
+				System.out.println("----------------------------Application Contenxt Loaded-------------------------");
+				Dao dao = ctx.getBean(Dao.class);
+				Connection con = ctx.getBean(OracleConnection.class);
+				dao.setCon(con);
+				dao.insert();
+			}
+		}
+	
+-------------
+Lab 4 - Day1.demo2
+	Add Configuration 
+	Create demo.Test.java 
+		package demo;
+		public class Test {
+			private int number = 0;
+			public Test(int number) {
+				// TODO Auto-generated constructor stub
+				this.number = number;
+			}
+			public int getNumber() {
+				return number;
+			}
+		}
+	add @Component annotation to Test class and see error
+	----delete 
+	Write demo.MyConfiguration
+		package demo;
+
+		@Configuration
+		public class MyConfiguration {
+			@Bean
+			public Test test() {
+				System.out.println("in test method of MyConfiguration");
+				return new Test(10);
+			}
+		}
+	Modify main method of App2.java 
+		to get bean of name test and type Test.class and invoke method
+		invoke getNumber method 
+		watch it is singleton
+	Modify test method to include @scope with prototype
+		watch the test method invocation
+--------------
+Lab3 - Day1.demo2
+	Annotation based
+	pom -> spring context
+	demo package		
+		Simple.java
+			@Component(value = "sim1")
+		First.java 
+			@Component
+			@Scope(value = "prototype")
+		App2.java
+			package demo;
+			@ComponentScan(basePackages = "demo")
+			public class App2 {
+				public static void main(String[] args) {
+					ApplicationContext ctx = new AnnotationConfigApplicationContext(App2.class);
+						System.out.println("------------------------Context Loaded----------------------------");
+						Simple s1 = ctx.getBean("sim1",Simple.class);
+						s1.m1();
+						
+						First f1 = ctx.getBean("first",First.class);
+						f1.m1();
+				}
+			}
+		Run -> change scope / delete component-scan and see errors.
+--------------------------
+Lab2 - Day1.demo1
+	Create a demo.First class (with @Component)
+	Modify main to load 
+			First f1 = ctx.getBean("first",First.class);
+			f1.m1();
+	Watch error 
+	Modify demo1.xml to include
+		  <context:component-scan base-package="demo"></context:component-scan>
+	Run -> both Simple and First are singleton by default
+	Modify 
+		  <bean id="sim1" class="demo.Simple" scope="prototype"> </bean>
+		Run -> observe difference
+	Modify 
+			@Component
+			@Scope(value = "prototype")
+			public class First {
+		run -> Observe 
+	
+--------------------------
+--> new workspace, jre (jdk), compiler(1.8)
+
+Lab 1 - 
+	Create new maven project (Day1.demo1)
+	Modify pom file to include 
+		<dependencies>
+			<!-- https://mvnrepository.com/artifact/org.springframework/spring-context -->
+			<dependency>
+				<groupId>org.springframework</groupId>
+				<artifactId>spring-context</artifactId>
+				<version>5.3.14</version>
+			</dependency>
+		</dependencies>
+	Create demo.Simple
+		package demo;
+
+		public class Simple {
+			public Simple() {
+				System.out.println("Simple Constructor invoked ");
+			}
+			public void m1() {
+				System.out.println("m1 of Simple invoked ...");
+			}
+		}
+	create demo.xml (in resources)
+		<?xml version="1.0" encoding="UTF-8"?>
+		<beans xmlns="http://www.springframework.org/schema/beans"
+			xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			xsi:schemaLocation="http://www.springframework.org/schema/beans
+				https://www.springframework.org/schema/beans/spring-beans.xsd">
+				<bean id="sim1" class="demo.Simple"> </bean>
+		 </beans>
+	create demo.App1.java
+			package demo;
+
+			public class App1 {
+
+				public static void main(String[] args) {
+						ApplicationContext ctx = new ClassPathXmlApplicationContext("demo.xml");
+						Simple s1 = ctx.getBean("sim1",Simple.class);
+						s1.m1();
+						Simple s2 = ctx.getBean("sim1",Simple.class);
+						s2.m1();
+						Simple s3 = ctx.getBean("sim1",Simple.class);
+						s3.m1();
+				}
+			}
